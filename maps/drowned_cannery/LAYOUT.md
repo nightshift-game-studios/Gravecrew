@@ -164,3 +164,8 @@ Every light sits on a Desi fixture (`assets/models/props/light_*.glb`), mounted 
 gen_cannery.py -> export_nav_layout.py -> --import -> fix_nav_ramps.gd -> merge_cannery.gd -> mount_lights.gd.
 Checks: verify_map, verify_cannery (LOS, loop width, routes >= 2 m), void gaps, chest spots, rails, light fixtures, wall-jump sim,
 nav sim (all doors open and all closed, 0 stalls), magenta scan on the screenshots.
+
+## Desi night floors (2026-10-28)
+- Retort Hall floor: `floor_retort` (assets/textures/floors/floor_retort)
+- Brine pit floor: `floor_pit` (assets/textures/floors/floor_pit)
+- Landmark props: 1 boiler, 1 retort, 2 harbour cranes, 2 net bundles, 2 fish crates, 2 ice blocks, 2 hull pieces (visual-only under Decor/Debris).

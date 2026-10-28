@@ -21,5 +21,11 @@ wooden_crate_01, wooden_crate_02, barrel_03, concrete_road_barrier, metal_trash_
 metal_jerrycan, worn_metal_rack (Poly Haven, CC0). Light fixtures: Desi's light_caged_work_light, light_ceiling_lamp,
 light_floor_work_lamp, light_hanging_lamp, light_lantern_hook, light_wall_sconce (CC0).
 
+
+## Desi cannery pack (`res://assets/models/props/`, `res://assets/textures/floors/`) — CC0 1.0, Desi
+Own-geometry props (MountPoint/Ground at y=0): prop_net_bundle, prop_fish_crate, prop_ice_block, prop_cannery_boiler,
+prop_cannery_retort, prop_harbour_crane, prop_hull_piece. Night floors: floor_retort and floor_pit (*_diff / *_nor_gl / *_arm).
+See desi-models/cannery/CANNERY_HANDOFF.md. Placed sparsely on Drowned Cannery (boiler, retort, 2 cranes, nets/crates/ice, hull plates).
+
 ## Shared night kit (`maps/common/night/`)
 dikhololo_night_2k.hdr (Poly Haven, CC0) night sky; night_flicker.gd and night_spark_burst.gd (project scripts).
