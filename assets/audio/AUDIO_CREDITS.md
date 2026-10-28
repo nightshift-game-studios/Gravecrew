@@ -53,6 +53,8 @@ Treyarch/Call of Duty audio or music.
 | sfx/player/q_vigil_candle_01..02.wav | tools/gen_q_abilities.py | Q Vigil Candle: match strike, phosphor flare, soft flame |
 | sfx/player/q_ember_brand_01..02.wav | tools/gen_q_abilities.py | Q Ember Brand: hot-iron clink, violent sizzle, steam hiss |
 
+| sfx/zombies/boss_*_01..02.wav | tools/gen_bosses.py | Boss rework (playtest #15 / BOSS_REWORK.md §6): Bellwether/Choir/Lantern stage stings, shared frenzy_warn (4 s)/frenzy/summon; Bellwether slam/aftershock/charge/toll/knell windup+hit + knell_arm + gate_on/break; Choir crescendo (5.5 s channel)/hit + shield_break + dirge windup/hit + discord_arm; Lantern beam windup + spit_fire + flare/bomb windup+hit + bomb_arm + gloam_arm + dark_start + blink_mark/jump |
+
 Shared code: `tools/dsp.py`, `tools/synth.py`. Regenerate everything with `tools/build_all.sh`.
 The seeds are fixed, so the decoded audio is bit-identical on every run (OGG container serial
 numbers differ between runs).
