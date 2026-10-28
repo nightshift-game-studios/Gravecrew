@@ -3,14 +3,12 @@ extends Node
 ## Gooey: death-screen bridge to Skillz's MatchStats (STATS_API.md "Match stats"). The tally itself lives in MatchStats
 ## now (v0.7.0); this node only waits for match_ended, reads MatchStats.summary() once Progress.record_match has run,
 ## maps it to the GameOverScreen keys and emits finished(stats). hud.gd keeps owning it (no shared-file change).
-## One local correction: a killing blow larger than the HP that was left counts as that HP (ask: Skillz could cap it).
+## Overkill is capped in MatchStats via ctx.hp_before (Player.take_damage / Skillz 9120a3a + G4M3N 105e428).
 
 signal finished(stats: Dictionary)
 
-var player: Node ## local player (overkill cap)
+var player: Node ## local player (bound by HUD)
 var ended: bool = false
-var _last_hp: int = -1
-var _overkill: int = 0
 var _end_ctx: Dictionary = {}
 
 
@@ -21,14 +19,8 @@ func _ready() -> void:
 		ge.event.connect(on_event)
 
 
-func _process(_delta: float) -> void:
-	if player != null and is_instance_valid(player) and player.get("health") != null:
-		_last_hp = int(player.get("health"))
-
-
 func reset() -> void:
 	ended = false
-	_overkill = 0
 	_end_ctx = {}
 
 
@@ -37,11 +29,6 @@ func on_event(name: StringName, ctx: Dictionary) -> void:
 		&"round_started":
 			if ended:
 				reset()
-		&"damage_taken":
-			var p = ctx.get("player")
-			# MatchStats caps a hit at ctx.hp_before itself; only older emitters without it need this local cap
-			if (player == null or p == null or p == player) and _last_hp >= 0 and not ctx.has("hp_before"):
-				_overkill += maxi(int(ctx.get("dealt", 0)) - _last_hp, 0)
 		&"match_ended":
 			if ended:
 				return
@@ -57,7 +44,6 @@ func _finish() -> void:
 ## MatchStats.summary() in GameOverScreen keys, plus Progress-side numbers (level, best round).
 func snapshot() -> Dictionary:
 	var out := from_summary(MatchStats.summary(), _end_ctx)
-	out["damage_taken"] = maxi(int(out.get("damage_taken", 0)) - _overkill, 0)
 	var prog := get_node_or_null("/root/Progress")
 	if prog:
 		out["best_round"] = int(prog.get("best_round"))
