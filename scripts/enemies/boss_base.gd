@@ -24,6 +24,7 @@ const Telegraph := preload("res://scripts/enemies/boss_telegraph.gd")
 const Art := preload("res://scripts/enemies/boss_art.gd")
 const Kit := preload("res://scripts/enemies/boss_kit.gd")
 const Zone := preload("res://scripts/enemies/boss_zone.gd")
+const VFX_PATH := "res://assets/vfx/bosses/boss_vfx.gd"
 const EVENT_KEEP := 8
 
 var boss_id: String = ""
@@ -47,6 +48,7 @@ var _events: Array = []
 var _ev_seq: int = 0
 var _ev_seen: int = -1
 var _frenzy_warned: bool = false
+var _frenzy_aura: Node3D = null ## Desi Frenzy glow; freed on death
 var _gate_seen_t: float = 0.0
 var impacts: int = 0 ## damage events resolved (tests)
 var _shape_nodes: Dictionary = {} ## attack id -> its newest telegraph node (an event "cancel" frees it)
@@ -315,13 +317,32 @@ func _play_event(ev: Dictionary, auth: bool) -> void:
 			sfx(str(ev.id) + "_hit", ev.p)
 		"stage":
 			sfx("stage")
+			_vfx_stage()
 		"frenzy_warn":
 			sfx("frenzy_warn")
 		"frenzy":
 			sfx("frenzy")
+			_vfx_frenzy()
 		"add":
 			sfx("summon")
 
+
+## Desi stage_ring flash (HANDOFF.md). No-op if art missing.
+func _vfx_stage() -> void:
+	if not ResourceLoader.exists(VFX_PATH) or not is_inside_tree():
+		return
+	var col := color_of("main", Color(1.0, 0.85, 0.4, 0.8))
+	(load(VFX_PATH) as GDScript).spawn_stage_flash(_parent3d(), global_position, col)
+
+
+## Desi frenzy_glow aura parented to this boss; one at a time.
+func _vfx_frenzy() -> void:
+	if not ResourceLoader.exists(VFX_PATH) or not is_inside_tree():
+		return
+	if _frenzy_aura != null and is_instance_valid(_frenzy_aura):
+		return
+	var col := color_of("danger", Color(1.0, 0.35, 0.1, 0.7))
+	_frenzy_aura = (load(VFX_PATH) as GDScript).spawn_frenzy_aura(self, col)
 
 ## Puppet: replay unseen events. The first call only primes the counter (late join).
 func net_apply_events(list: Variant) -> void:
@@ -384,4 +405,7 @@ func random_player() -> Node3D:
 
 func _die() -> void:
 	clear_zones()
+	if _frenzy_aura != null and is_instance_valid(_frenzy_aura):
+		_frenzy_aura.queue_free()
+		_frenzy_aura = null
 	super._die()

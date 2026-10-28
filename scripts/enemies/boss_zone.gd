@@ -1,5 +1,6 @@
 extends Node3D
 ## Lingering boss hazard zone (Skillz, boss rework 2026-10-22). Arming telegraph -> active hazard -> fade.
+## Desi zone_fill / zone_burst textures when present (see assets/vfx/bosses/).
 ##   ARM  (`arm` s): outline + fill growing to the full disc = "this will hurt"; harmless.
 ##   LIVE (`life` s): pulses solid; every `tick_every` s every living player inside takes `tick_dmg`.
 ##   `burst_dmg` is dealt once to everyone inside the moment it goes live (life 0 = a pure delayed blast, e.g. Lantern bombs).
@@ -7,6 +8,7 @@ extends Node3D
 ## event stream (BossBase.net_boss_state). Never use class_name here (preloaded by BossKit before the class cache refreshes).
 
 const FLASH := 0.35
+const VFX_PATH := "res://assets/vfx/bosses/boss_vfx.gd"
 
 var host: Node = null
 var kind: String = "zone"
@@ -63,11 +65,17 @@ func _ready() -> void:
 
 
 static func _mat(c: Color) -> StandardMaterial3D:
+	var path := "res://assets/vfx/bosses/zone_fill.png"
+	if ResourceLoader.exists(VFX_PATH):
+		return (load(VFX_PATH) as GDScript).make_mat(c, path)
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.albedo_color = c
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if ResourceLoader.exists(path):
+		m.albedo_texture = load(path)
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	return m
 
 
@@ -99,6 +107,9 @@ func _physics_process(delta: float) -> void:
 		_apply(burst_dmg)
 	var end := arm + life
 	if _t >= end + FLASH:
+		if ResourceLoader.exists(VFX_PATH) and not has_meta("_burst_done"):
+			set_meta("_burst_done", true)
+			(load(VFX_PATH) as GDScript).spawn_burst(get_parent(), global_position, radius, color)
 		queue_free()
 		return
 	var a := color.a

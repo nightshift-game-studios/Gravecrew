@@ -96,7 +96,10 @@ func _play_event(ev: Dictionary, auth: bool) -> void:
 		"cast":
 			sfx(str(ev.id) + "_windup")
 		"blink":
-			Kit.show_shape(_parent3d(), {"kind": "circle", "c": ev.p, "r": 1.3}, float(ev.a), color_of("blink", Color(0.8, 0.4, 1.0, 0.55)))
+			if ResourceLoader.exists(VFX_PATH):
+				(load(VFX_PATH) as GDScript).spawn_blink_mark(_parent3d(), ev.p, color_of("blink", Color(0.8, 0.4, 1.0, 0.7)), float(ev.a))
+			else:
+				Kit.show_shape(_parent3d(), {"kind": "circle", "c": ev.p, "r": 1.3}, float(ev.a), color_of("blink", Color(0.8, 0.4, 1.0, 0.55)))
 			sfx("blink_mark", ev.p)
 		"blink_done":
 			sfx("blink_jump")

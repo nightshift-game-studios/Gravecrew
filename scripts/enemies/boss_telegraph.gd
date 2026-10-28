@@ -4,11 +4,12 @@ extends Node3D
 ## RAMPS UP (alpha 0.3 -> 1.0) to the moment of impact and circles/rings/cones show a fill that grows to the full
 ## shape on impact, so "when does it hit" reads without a number. A last 0.12 s flash, then it frees itself.
 ## Instantiate via preload("res://scripts/enemies/boss_telegraph.gd").new() then setup_circle / setup_line / setup_ring / setup_cone.
-## Procedural stand-ins until Desi's decal art lands (ids in /workspace/skillz/BOSS_REWORK.md).
-## No class_name (avoids self-referential .new() compile issues).
+## Textured ground meshes (Desi assets/vfx/bosses/); falls back to flat colour if art missing.
+## See /workspace/desi-models/boss_vfx/HANDOFF.md. No class_name (avoids self-referential .new()).
 
 enum Kind { CIRCLE, LINE, RING, CONE }
 const FLASH := 0.12
+const VFX_PATH := "res://assets/vfx/bosses/boss_vfx.gd"
 
 var kind: Kind = Kind.CIRCLE
 var radius: float = 3.5
@@ -106,19 +107,37 @@ static func spawn_line(parent: Node3D, from: Vector3, dir: Vector3, len: float, 
 
 
 func _make_mat(c: Color) -> StandardMaterial3D:
+	var path := "res://assets/vfx/bosses/tg_circle.png"
+	match kind:
+		Kind.RING:
+			path = "res://assets/vfx/bosses/tg_ring.png"
+		Kind.CONE:
+			path = "res://assets/vfx/bosses/tg_cone.png"
+		Kind.LINE:
+			path = "res://assets/vfx/bosses/tg_line.png"
+		_:
+			path = "res://assets/vfx/bosses/tg_circle.png"
+	if ResourceLoader.exists(VFX_PATH):
+		return (load(VFX_PATH) as GDScript).make_mat(c, path)
 	var m := StandardMaterial3D.new()
 	m.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	m.albedo_color = c
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if ResourceLoader.exists(path):
+		m.albedo_texture = load(path)
+		m.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
 	return m
 
 
-## Flat annulus / sector in the XZ plane (local -Z = forward for cones).
+## Flat annulus / sector in the XZ plane (local -Z = forward for cones). UVs map the unit disc for Desi masks.
 static func _flat_mesh(r_in: float, r_out: float, a0: float, a1: float, segs: int) -> ArrayMesh:
+	if ResourceLoader.exists(VFX_PATH):
+		return (load(VFX_PATH) as GDScript).flat_mesh(r_in, r_out, a0, a1, segs)
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	st.set_normal(Vector3.UP)
+	var span := maxf(r_out, 0.001) * 2.0
 	for i in segs:
 		var t0 := lerpf(a0, a1, float(i) / segs)
 		var t1 := lerpf(a0, a1, float(i + 1) / segs)
@@ -129,9 +148,11 @@ static func _flat_mesh(r_in: float, r_out: float, a0: float, a1: float, segs: in
 		var p10 := d0 * r_out
 		var p11 := d1 * r_out
 		for v in [p00, p10, p11]:
+			st.set_uv(Vector2(v.x / span + 0.5, v.z / span + 0.5))
 			st.add_vertex(v)
 		if r_in > 0.001:
 			for v in [p00, p11, p01]:
+				st.set_uv(Vector2(v.x / span + 0.5, v.z / span + 0.5))
 				st.add_vertex(v)
 	return st.commit()
 
@@ -161,10 +182,27 @@ func _rebuild() -> void:
 			_mesh.mesh = _flat_mesh(0.0, length, -h, h, 16)
 			_fill.mesh = _flat_mesh(0.0, length, -h, h, 16)
 		_:
-			var box := BoxMesh.new()
-			box.size = Vector3(width, 0.04, length)
-			_mesh.mesh = box
-			_fill.mesh = box
+			# Soft lane from Desi tg_line (quad in XZ) so the mask UVs read; falls back to a box.
+			var lane := _flat_mesh(0.0, 1.0, 0.0, TAU, 4)  # placeholder
+			var st := SurfaceTool.new()
+			st.begin(Mesh.PRIMITIVE_TRIANGLES)
+			st.set_normal(Vector3.UP)
+			var hw := width * 0.5
+			var hl := length * 0.5
+			var corners := [
+				Vector3(-hw, 0, -hl), Vector3(hw, 0, -hl), Vector3(hw, 0, hl),
+				Vector3(-hw, 0, -hl), Vector3(hw, 0, hl), Vector3(-hw, 0, hl),
+			]
+			var uvs := [
+				Vector2(0, 0), Vector2(1, 0), Vector2(1, 1),
+				Vector2(0, 0), Vector2(1, 1), Vector2(0, 1),
+			]
+			for i in corners.size():
+				st.set_uv(uvs[i])
+				st.add_vertex(corners[i])
+			lane = st.commit()
+			_mesh.mesh = lane
+			_fill.mesh = lane
 	_apply_progress(0.0)
 
 
